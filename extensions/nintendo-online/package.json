@@ -1,0 +1,47 @@
+{
+  "name": "nintendo-online",
+  "title": "Nintendo-online",
+  "description": "Browse the latest articles and forum posts from Nintendo-Online.de.",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "astein",
+  "categories": [
+    "News"
+  ],
+  "homepage": "https://www.nintendo-online.de",
+  "icon": "icon.png",
+  "commands": [
+    {
+      "name": "news",
+      "title": "Feed",
+      "subtitle": "Nintendo-Online.de",
+      "description": "Read the latest articles from Nintendo-Online.de.",
+      "mode": "view"
+    },
+    {
+      "name": "forum",
+      "title": "Forum",
+      "subtitle": "Nintendo-Online.de",
+      "description": "Browse the latest topics from the Nintendo-Online.de forum.",
+      "mode": "view"
+    }
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint 'src/**'",
+    "format": "prettier 'src/**' '!**/.DS_Store' --check",
+    "build": "npx @raycast/api build",
+    "publish": "npx @raycast/api@latest publish"
+  },
+  "dependencies": {
+    "@raycast/api": "^1.78.0",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.9",
+    "@types/xml2js": "^0.4.14",
+    "eslint": "^9.9.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.4.0"
+  }
+}
