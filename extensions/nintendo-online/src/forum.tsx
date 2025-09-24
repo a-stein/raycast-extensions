@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { Action, ActionPanel, Icon, List, Toast, showToast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Icon,
+  List,
+  Toast,
+  showToast,
+} from "@raycast/api";
 
 import { FeedItem, fetchFeedItems } from "./feed";
 import { formatLongDate, formatRelativeDate, htmlToMarkdown } from "./format";
@@ -65,11 +72,14 @@ export default function ForumCommand() {
     setState((previous) => ({
       ...previous,
       isLoading: true,
-      sections: previous.sections.map((section) => ({ ...section, error: undefined })),
+      sections: previous.sections.map((section) => ({
+        ...section,
+        error: undefined,
+      })),
     }));
 
     const results = await Promise.allSettled(
-      FORUM_FEEDS.map((feed) => fetchFeedItems(feed.url, feed.limit))
+      FORUM_FEEDS.map((feed) => fetchFeedItems(feed.url, feed.limit)),
     );
 
     const sections: ForumSectionState[] = results.map((result, index) => {
@@ -87,7 +97,11 @@ export default function ForumCommand() {
 
     const failedSection = sections.find((section) => section.error);
     if (failedSection) {
-      await showToast(Toast.Style.Failure, "Unable to load forum feeds", failedSection.error);
+      await showToast(
+        Toast.Style.Failure,
+        "Unable to load forum feeds",
+        failedSection.error,
+      );
     }
   }
 
@@ -128,7 +142,11 @@ export default function ForumCommand() {
               }
               actions={
                 <ActionPanel>
-                  <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={loadFeed} />
+                  <Action
+                    title="Refresh"
+                    icon={Icon.ArrowClockwise}
+                    onAction={loadFeed}
+                  />
                 </ActionPanel>
               }
             />
@@ -147,7 +165,13 @@ export default function ForumCommand() {
   );
 }
 
-function ForumListItem({ item, onReload }: { item: FeedItem; onReload: () => void }) {
+function ForumListItem({
+  item,
+  onReload,
+}: {
+  item: FeedItem;
+  onReload: () => void;
+}) {
   const accessories = item.published
     ? [{ icon: Icon.Clock, text: formatRelativeDate(item.published) }]
     : undefined;
@@ -159,7 +183,9 @@ function ForumListItem({ item, onReload }: { item: FeedItem; onReload: () => voi
     markdownParts.push(htmlToMarkdown(item.contentSnippet));
   }
 
-  const keywords = [item.author, item.contentSnippet, item.content].filter(Boolean) as string[];
+  const keywords = [item.author, item.contentSnippet, item.content].filter(
+    Boolean,
+  ) as string[];
 
   return (
     <List.Item
@@ -174,7 +200,13 @@ function ForumListItem({ item, onReload }: { item: FeedItem; onReload: () => voi
   );
 }
 
-function ForumActions({ item, onReload }: { item: FeedItem; onReload: () => void }) {
+function ForumActions({
+  item,
+  onReload,
+}: {
+  item: FeedItem;
+  onReload: () => void;
+}) {
   return (
     <ActionPanel>
       <Action.OpenInBrowser url={item.link} />
@@ -187,8 +219,17 @@ function ForumActions({ item, onReload }: { item: FeedItem; onReload: () => void
       {item.author ? (
         <Action.CopyToClipboard title="Copy Author" content={item.author} />
       ) : null}
-      <Action.CopyToClipboard title="Copy Link" content={item.link} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} />
-      <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={onReload} shortcut={{ modifiers: ["cmd"], key: "r" }} />
+      <Action.CopyToClipboard
+        title="Copy Link"
+        content={item.link}
+        shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+      />
+      <Action
+        title="Refresh"
+        icon={Icon.ArrowClockwise}
+        onAction={onReload}
+        shortcut={{ modifiers: ["cmd"], key: "r" }}
+      />
     </ActionPanel>
   );
 }

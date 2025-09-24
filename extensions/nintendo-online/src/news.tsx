@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { Action, ActionPanel, Icon, List, Toast, showToast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Icon,
+  List,
+  Toast,
+  showToast,
+} from "@raycast/api";
 
 import { FeedItem, fetchFeedItems } from "./feed";
 import { formatLongDate, formatRelativeDate, htmlToMarkdown } from "./format";
@@ -20,7 +27,11 @@ export default function NewsCommand() {
   }, []);
 
   async function loadFeed() {
-    setState((previous) => ({ ...previous, isLoading: true, error: undefined }));
+    setState((previous) => ({
+      ...previous,
+      isLoading: true,
+      error: undefined,
+    }));
 
     try {
       const items = await fetchFeedItems(FEED_URL);
@@ -57,7 +68,11 @@ export default function NewsCommand() {
           icon={Icon.Book}
           actions={
             <ActionPanel>
-              <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={loadFeed} />
+              <Action
+                title="Refresh"
+                icon={Icon.ArrowClockwise}
+                onAction={loadFeed}
+              />
             </ActionPanel>
           }
         />
@@ -72,7 +87,9 @@ export default function NewsCommand() {
       ? [{ icon: Icon.Clock, text: formatRelativeDate(item.published) }]
       : undefined;
 
-    const keywords = [item.author, item.contentSnippet, item.content].filter(Boolean) as string[];
+    const keywords = [item.author, item.contentSnippet, item.content].filter(
+      Boolean,
+    ) as string[];
 
     const markdownParts = ["# " + item.title];
     if (item.content) {
@@ -96,7 +113,13 @@ export default function NewsCommand() {
   }
 }
 
-function FeedActions({ item, onReload }: { item: FeedItem; onReload: () => void }) {
+function FeedActions({
+  item,
+  onReload,
+}: {
+  item: FeedItem;
+  onReload: () => void;
+}) {
   return (
     <ActionPanel>
       <Action.OpenInBrowser url={item.link} />
@@ -106,7 +129,11 @@ function FeedActions({ item, onReload }: { item: FeedItem; onReload: () => void 
           content={formatLongDate(item.published)}
         />
       ) : null}
-      <Action.CopyToClipboard title="Copy Link" content={item.link} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} />
+      <Action.CopyToClipboard
+        title="Copy Link"
+        content={item.link}
+        shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+      />
       <Action
         title="Refresh"
         icon={Icon.ArrowClockwise}

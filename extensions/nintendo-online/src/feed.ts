@@ -20,7 +20,10 @@ const parser = new Parser<unknown, RawFeedItem>({
   },
 });
 
-export async function fetchFeedItems(feedUrl: string, limit = 20): Promise<FeedItem[]> {
+export async function fetchFeedItems(
+  feedUrl: string,
+  limit = 20,
+): Promise<FeedItem[]> {
   const response = await fetch(feedUrl);
   if (!response.ok) {
     throw new Error(`Request failed with status ${response.status}`);
