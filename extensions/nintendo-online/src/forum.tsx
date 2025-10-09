@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Action,
   ActionPanel,
@@ -7,6 +7,7 @@ import {
   Toast,
   showToast,
 } from "@raycast/api";
+import { useCachedPromise } from "@raycast/utils";
 
 import { FeedItem, fetchFeedItems } from "./feed";
 import { formatLongDate, formatRelativeDate, htmlToMarkdown } from "./format";
@@ -53,66 +54,57 @@ interface ForumSectionState {
   error?: string;
 }
 
-interface FeedState {
-  sections: ForumSectionState[];
-  isLoading: boolean;
-}
-
 export default function ForumCommand() {
-  const [state, setState] = useState<FeedState>({
-    sections: FORUM_FEEDS.map((feed) => ({ feed, items: [] })),
-    isLoading: true,
-  });
+  const { data, isLoading, revalidate } = useCachedPromise(
+    async () => {
+      const results = await Promise.allSettled(
+        FORUM_FEEDS.map((feed) => fetchFeedItems(feed.url, feed.limit)),
+      );
+
+      return results.map((result, index): ForumSectionState => {
+        const feed = FORUM_FEEDS[index];
+        if (result.status === "fulfilled") {
+          return { feed, items: result.value };
+        }
+
+        const reason = result.reason;
+        const message =
+          reason instanceof Error ? reason.message : String(reason);
+        return { feed, items: [], error: message };
+      });
+    },
+    [],
+    {
+      keepPreviousData: true,
+    },
+  );
+
+  const sections =
+    data ?? FORUM_FEEDS.map((feed) => ({ feed, items: [] as FeedItem[] }));
 
   useEffect(() => {
-    void loadFeed();
-  }, []);
-
-  async function loadFeed() {
-    setState((previous) => ({
-      ...previous,
-      isLoading: true,
-      sections: previous.sections.map((section) => ({
-        ...section,
-        error: undefined,
-      })),
-    }));
-
-    const results = await Promise.allSettled(
-      FORUM_FEEDS.map((feed) => fetchFeedItems(feed.url, feed.limit)),
-    );
-
-    const sections: ForumSectionState[] = results.map((result, index) => {
-      const feed = FORUM_FEEDS[index];
-      if (result.status === "fulfilled") {
-        return { feed, items: result.value };
-      }
-
-      const reason = result.reason;
-      const message = reason instanceof Error ? reason.message : String(reason);
-      return { feed, items: [], error: message };
-    });
-
-    setState({ sections, isLoading: false });
-
     const failedSection = sections.find((section) => section.error);
     if (failedSection) {
-      await showToast(
+      void showToast(
         Toast.Style.Failure,
         "Unable to load forum feeds",
         failedSection.error,
       );
     }
-  }
+  }, [sections]);
+
+  const reload = () => {
+    void revalidate();
+  };
 
   return (
     <List
-      isLoading={state.isLoading}
+      isLoading={isLoading}
       searchBarPlaceholder="Search Nintendo-Online forum topics"
       isShowingDetail
       throttle
     >
-      {state.sections.map((section) => (
+      {sections.map((section) => (
         <List.Section key={section.feed.id} title={section.feed.title}>
           {section.error ? (
             <List.Item
@@ -126,7 +118,7 @@ export default function ForumCommand() {
               }
               actions={
                 <ActionPanel>
-                  <Action title="Retry" onAction={loadFeed} />
+                  <Action title="Retry" onAction={reload} />
                 </ActionPanel>
               }
             />
@@ -145,7 +137,7 @@ export default function ForumCommand() {
                   <Action
                     title="Refresh"
                     icon={Icon.ArrowClockwise}
-                    onAction={loadFeed}
+                    onAction={reload}
                   />
                 </ActionPanel>
               }
@@ -155,7 +147,7 @@ export default function ForumCommand() {
               <ForumListItem
                 key={`${section.feed.id}-${item.link}`}
                 item={item}
-                onReload={loadFeed}
+                onReload={reload}
               />
             ))
           )}

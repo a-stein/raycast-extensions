@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Action,
   ActionPanel,
@@ -7,61 +7,57 @@ import {
   Toast,
   showToast,
 } from "@raycast/api";
+import { useCachedPromise } from "@raycast/utils";
 
 import { FeedItem, fetchFeedItems } from "./feed";
 import { formatLongDate, formatRelativeDate, htmlToMarkdown } from "./format";
 
 const FEED_URL = "https://www.nintendo-online.de/rss.xml";
 
-interface FeedState {
-  items: FeedItem[];
-  isLoading: boolean;
-  error?: string;
-}
-
 export default function NewsCommand() {
-  const [state, setState] = useState<FeedState>({ items: [], isLoading: true });
+  const { data, error, isLoading, revalidate } = useCachedPromise(
+    fetchFeedItems,
+    [FEED_URL],
+    {
+      keepPreviousData: true,
+    },
+  );
 
+  const items = data ?? [];
+  const errorMessage =
+    error instanceof Error ? error.message : error ? String(error) : undefined;
+
+  // Surface loading errors via toast without discarding cached data
   useEffect(() => {
-    void loadFeed();
-  }, []);
-
-  async function loadFeed() {
-    setState((previous) => ({
-      ...previous,
-      isLoading: true,
-      error: undefined,
-    }));
-
-    try {
-      const items = await fetchFeedItems(FEED_URL);
-      setState({ items, isLoading: false });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      setState({ items: [], isLoading: false, error: message });
-      await showToast(Toast.Style.Failure, "Unable to load news", message);
+    if (!errorMessage) {
+      return;
     }
-  }
+    void showToast(Toast.Style.Failure, "Unable to load news", errorMessage);
+  }, [errorMessage]);
+
+  const reload = () => {
+    void revalidate();
+  };
 
   return (
     <List
-      isLoading={state.isLoading}
+      isLoading={isLoading}
       searchBarPlaceholder="Search Nintendo-Online Feed"
       isShowingDetail
       throttle
     >
-      {state.error ? (
+      {errorMessage ? (
         <List.EmptyView
           title="Could not load Nintendo-Online Feed"
-          description={state.error}
+          description={errorMessage}
           icon={Icon.ExclamationMark}
           actions={
             <ActionPanel>
-              <Action title="Retry" onAction={loadFeed} />
+              <Action title="Retry" onAction={reload} />
             </ActionPanel>
           }
         />
-      ) : state.items.length === 0 ? (
+      ) : items.length === 0 ? (
         <List.EmptyView
           title="No articles available"
           description="Nintendo-Online.de has not published new content yet."
@@ -71,18 +67,26 @@ export default function NewsCommand() {
               <Action
                 title="Refresh"
                 icon={Icon.ArrowClockwise}
-                onAction={loadFeed}
+                onAction={reload}
               />
             </ActionPanel>
           }
         />
       ) : (
-        state.items.map((item) => <NewsListItem key={item.link} item={item} />)
+        items.map((item) => (
+          <NewsListItem key={item.link} item={item} onReload={reload} />
+        ))
       )}
     </List>
   );
 
-  function NewsListItem({ item }: { item: FeedItem }) {
+  function NewsListItem({
+    item,
+    onReload,
+  }: {
+    item: FeedItem;
+    onReload: () => void;
+  }) {
     const accessories = item.published
       ? [{ icon: Icon.Clock, text: formatRelativeDate(item.published) }]
       : undefined;
@@ -107,7 +111,7 @@ export default function NewsCommand() {
         icon={{ source: "assets/icon.png" }}
         keywords={keywords}
         detail={<List.Item.Detail markdown={detailMarkdown} />}
-        actions={<FeedActions item={item} onReload={loadFeed} />}
+        actions={<FeedActions item={item} onReload={onReload} />}
       />
     );
   }
