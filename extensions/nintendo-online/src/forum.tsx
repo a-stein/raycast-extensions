@@ -79,8 +79,8 @@ export default function ForumCommand() {
     },
   );
 
-  const sections =
-    data ?? FORUM_FEEDS.map((feed) => ({ feed, items: [] as FeedItem[] }));
+  const sections: ForumSectionState[] =
+    data ?? FORUM_FEEDS.map((feed) => ({ feed, items: [], error: undefined }));
 
   useEffect(() => {
     const failedSection = sections.find((section) => section.error);
